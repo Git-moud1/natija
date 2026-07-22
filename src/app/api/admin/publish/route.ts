@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
-import { publishDataset } from "@/lib/storage";
+import { isBlobMode, publishDataset } from "@/lib/storage";
 import { COLUMN_ORDER, type Dataset, type ExamId } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -21,6 +21,16 @@ function isValidDataset(d: unknown): d is Dataset {
 export async function POST(req: Request) {
   if (!(await isAuthenticated())) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // In production (Blob configured) the browser uploads directly to Blob via
+  // /api/admin/upload — datasets must never flow through this function, which
+  // would hit the 4.5 MB body limit. This route exists only for local dev.
+  if (isBlobMode()) {
+    return NextResponse.json(
+      { ok: false, error: "use_client_upload" },
+      { status: 409 },
+    );
   }
 
   let dataset: unknown;

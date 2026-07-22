@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { autoMap, FIELD_LABELS, MAPPABLE_FIELDS, requiredFields } from "@/lib/schema";
 import { COL } from "@/lib/compact";
 import { DECISION_LABELS } from "@/lib/normalize";
@@ -42,6 +43,8 @@ export function AdminPanel() {
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState("");
 
   const workerRef = useRef<Worker | null>(null);
 
@@ -130,22 +133,70 @@ export function AdminPanel() {
     if (!result) return;
     setPublishing(true);
     setError(null);
+    setUploadPct(0);
+    setUploadPhase("");
+    const exam = result.dataset.meta.exam;
+    const version = result.dataset.meta.version;
+
     try {
-      const res = await fetch("/api/admin/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.dataset),
-      });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setStep("done");
-      } else if (res.status === 401) {
+      const modeRes = await fetch("/api/admin/mode");
+      if (modeRes.status === 401) {
         setError("انتهت الجلسة. أعد تسجيل الدخول.");
-      } else {
-        setError(`فشل النشر: ${data.error ?? "unknown"}`);
+        return;
       }
-    } catch {
-      setError("تعذّر الاتصال بالخادم.");
+      const { blob } = (await modeRes.json().catch(() => ({ blob: false }))) as {
+        blob: boolean;
+      };
+
+      if (blob) {
+        // ── Production: upload directly to Blob from the browser. The dataset
+        // never passes through a serverless function, so there is no size cap.
+        setUploadPhase("رفع البيانات");
+        const dataBody = new Blob([JSON.stringify(result.dataset)], {
+          type: "application/json",
+        });
+        const dataBlob = await upload(`${exam}.json`, dataBody, {
+          access: "public",
+          handleUploadUrl: "/api/admin/upload",
+          contentType: "application/json",
+          multipart: true, // chunked + parallel + retried — for the 121k file
+          clientPayload: JSON.stringify({ exam, kind: "data" }),
+          onUploadProgress: (e) => setUploadPct(e.percentage),
+        });
+
+        // Version-stamp the immutable data URL so overwrites bust caches.
+        setUploadPhase("تحديث الفهرس");
+        const meta = { ...result.dataset.meta, dataUrl: `${dataBlob.url}?v=${version}` };
+        const metaBody = new Blob([JSON.stringify(meta)], { type: "application/json" });
+        await upload(`${exam}.meta.json`, metaBody, {
+          access: "public",
+          handleUploadUrl: "/api/admin/upload",
+          contentType: "application/json",
+          clientPayload: JSON.stringify({ exam, kind: "meta" }),
+        });
+        setUploadPct(100);
+        setStep("done");
+      } else {
+        // ── Local dev: no Blob store — the server writes ./.data (no platform
+        // body limit when self-hosted / running `next dev`).
+        setUploadPhase("حفظ محلي");
+        const res = await fetch("/api/admin/publish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result.dataset),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setUploadPct(100);
+          setStep("done");
+        } else if (res.status === 401) {
+          setError("انتهت الجلسة. أعد تسجيل الدخول.");
+        } else {
+          setError(`فشل النشر: ${data.error ?? "unknown"}`);
+        }
+      }
+    } catch (err) {
+      setError(`تعذّر النشر: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setPublishing(false);
     }
@@ -314,6 +365,8 @@ export function AdminPanel() {
           onBack={() => setStep("map")}
           onPublish={publish}
           publishing={publishing}
+          uploadPct={uploadPct}
+          uploadPhase={uploadPhase}
         />
       )}
 
@@ -555,12 +608,16 @@ function ReviewScreen({
   onBack,
   onPublish,
   publishing,
+  uploadPct,
+  uploadPhase,
 }: {
   result: ProcessResult;
   exam: ExamId;
   onBack: () => void;
   onPublish: () => void;
   publishing: boolean;
+  uploadPct: number;
+  uploadPhase: string;
 }) {
   const { dataset, warnings, stats } = result;
   const meta = dataset.meta;
@@ -644,6 +701,13 @@ function ReviewScreen({
               ))}
             </div>
           </div>
+        )}
+
+        {publishing && (
+          <ProgressBar
+            value={uploadPct / 100}
+            phase={`${uploadPhase}${uploadPct > 0 ? "" : " …"}`}
+          />
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
