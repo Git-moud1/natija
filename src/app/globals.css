@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Natija — Mauritanian identity: deep green + gold, Moorish texture, glass.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Brand — deep green ramp */
+  --color-green-950: #032417;
+  --color-green-900: #04351f;
+  --color-green-800: #054a2b;
+  --color-green-700: #006233; /* national green */
+  --color-green-600: #0a7a42;
+  --color-green-500: #12945a;
+  --color-green-400: #38b37c;
+  --color-green-300: #7fd0a6;
+
+  /* Gold ramp */
+  --color-gold-600: #b8901f;
+  --color-gold-500: #d4af37;
+  --color-gold-400: #ffd343;
+  --color-gold-300: #ffe08a;
+
+  /* Neutral ink for light surfaces */
+  --color-ink-900: #0b1a12;
+  --color-ink-700: #23372b;
+  --color-ink-500: #4a5d52;
+
+  --color-sand-50: #f6f8f4;
+  --color-red-accent: #c1372b;
+
+  --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+  --font-arabic: var(--font-arabic), "Segoe UI", sans-serif;
+
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  /* semantic z-index scale */
+  --z-sticky: 30;
+  --z-dropdown: 40;
+  --z-modal-backdrop: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+}
+
+:root {
+  --bg: #04180e;
+  --bg-2: #052a18;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-solid: #0a2417;
+  --border: rgba(255, 211, 67, 0.14);
+  --text: #f2f7f0;
+  --text-muted: #a9c3b3;
+  --gold: #ffd343;
+  --gold-deep: #d4af37;
+  --green: #12945a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 700px at 80% -10%, rgba(18, 148, 90, 0.35), transparent 60%),
+    radial-gradient(900px 600px at 0% 10%, rgba(212, 175, 55, 0.1), transparent 55%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Arabic gets the Arabic-first stack */
+html[lang="ar"] body {
+  font-family: var(--font-arabic), var(--font-latin), system-ui, sans-serif;
+}
+
+/* Moorish geometric texture — subtle, tiled, GPU-cheap SVG data URI */
+.moorish-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' stroke='%23ffd343' stroke-opacity='0.05' stroke-width='1'%3E%3Cpath d='M30 0l30 30-30 30L0 30z'/%3E%3Cpath d='M30 15l15 15-15 15-15-15z'/%3E%3Ccircle cx='30' cy='30' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Glass surface utility */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
+}
+
+.card-solid {
+  background: linear-gradient(180deg, rgba(10, 47, 27, 0.92), rgba(5, 30, 18, 0.92));
+  border: 1px solid var(--border);
+}
+
+/* Gold text (solid, not gradient — per design bans) */
+.text-gold {
+  color: var(--gold);
+}
+
+/* Focus ring — always visible, high contrast */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Tabular figures for all numeric data */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Shimmer skeleton */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 211, 67, 0.09),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+html[dir="rtl"] .shimmer::after {
+  animation-name: shimmer-rtl;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes shimmer-rtl {
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 211, 67, 0.25);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Selection */
+::selection {
+  background: rgba(255, 211, 67, 0.3);
+  color: #fff;
+}
+
+/* Directional arrows flip in RTL */
+html[dir="rtl"] .dir-arrow {
+  transform: scaleX(-1);
+}
+
+/* Hide non-essential cells on small phones */
+@media (max-width: 470px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .shimmer::after {
+    display: none;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "natija",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Natija — Mauritania BAC, BEPC & Concours results website. The fastest results portal in the country.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "gen:samples": "node scripts/generate-samples.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1",
+    "framer-motion": "^12.0.0",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
